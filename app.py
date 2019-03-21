@@ -4,7 +4,7 @@ from tornado import gen, httpclient, template
 from bs4 import BeautifulSoup
 import os
 
-tl = template.Template('''<?xml version="1.0" encoding="ISO-8859-1" ?>
+tl = template.Template('''<?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0">
 <channel>
  <title>{{ ct }}</title>
@@ -35,6 +35,7 @@ class RSSHandler(web.RequestHandler):
             html = BeautifulSoup(response.body, 'html.parser')
             aa = html.select('ul.post-list li a')
             ar = [(i.select('div.p-title')[0].get_text(), 'https://bbs.tianya.cn/m/'+i.attrs['href'], i.select('span')[0].get_text(), i.select('div.author')[0].get_text().split()[0]) for i in aa[:5]]
+            self.set_header('Content-Type', 'text/xml; charset=UTF-8')
             self.write(tl.generate(ct=rss, ar=ar))
         else:
             self.write(rss)
