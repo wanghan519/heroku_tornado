@@ -6,11 +6,16 @@ from bs4 import BeautifulSoup
 
 options.define('port', default=5000, help='port to run on', type=int)
 
-class MainHandler(web.RequestHandler):
+class Hdl(web.RequestHandler):
+    @property
+    def tl(self):
+        return self.application.tl
+
+class MainHandler(Hdl):
     def get(self):
         self.write('Hello, torando.')
 
-class RSSHandler(web.RequestHandler):
+class RSSHandler(Hdl):
     @gen.coroutine
     def get(self, rss):
         if rss=='tianya':
@@ -31,7 +36,7 @@ class App(web.Application):
             (r'/(.*)', RSSHandler),
         ]
         settings = {}
-        super(App, self).__init__(handlers, **settings)
+        web.Application.__init__(self, handlers, **settings)
         self.tl = template.Template('''<?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0">
 <channel>
