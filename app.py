@@ -14,10 +14,10 @@ tl = template.DictLoader({'rss.xml': '''<?xml version="1.0" encoding="UTF-8" ?>
  <description>https://github.com/wanghan519/heroku_tornado</description>
  {% for i in ar %}
  <item>
-  <title>{{ escape(i[0]) }}</title>
-  <link>{{ escape(i[1]) }}</link>
-  <pubDate>{{ escape(i[2]) }}</pubDate>
-  <description>{{ escape(i[3]) }}</description>
+  <title>{{ i[0] }}</title>
+  <link>{{ i[1] }}</link>
+  <pubDate>{{ i[2] }}</pubDate>
+  <description>{{ i[3] }}</description>
  </item>
  {% end %}
 </channel>
@@ -42,7 +42,7 @@ class RSSHandler(Hdl):
             html = BeautifulSoup(response.body, 'html.parser')
             aa = html.select('ul.post-list li a')
             ar = [(i.select('div.p-title')[0].get_text().strip(), 'https://bbs.tianya.cn/m/'+i.attrs['href'], i.select('span')[0].get_text(), i.select('div.author')[0].get_text().split()[0]) for i in aa[:5]]
-            self.set_header('Content-Type', 'text/xml; charset=UTF-8')
+            self.set_header('Content-Type', 'application/xml; charset=UTF-8')
             self.render('rss.xml', ct=rss, ar=ar)
         else:
             self.write(rss)
