@@ -1,14 +1,17 @@
 #!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 
-from tornado import web, httpserver, ioloop
-from tornado import gen, httpclient, template
-from tornado import options
+from tornado.web import RequestHandler, Application
+from tornado.httpserver import HTTPServer
+from tornado.ioloop import IOLoop
+from tornado.httpclient import AsyncHTTPClient
+from tornado.template import DictLoader
+from tornado import gen, options
 from bs4 import BeautifulSoup
 
 options.define('port', default=5000, help='port to run on', type=int)
 
-tl = template.DictLoader({'rss.xml': '''<?xml version="1.0" encoding="UTF-8" ?>
+tl = DictLoader({'rss.xml': '''<?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0">
 <channel>
  <title>{{ ct }}</title>
@@ -26,17 +29,17 @@ tl = template.DictLoader({'rss.xml': '''<?xml version="1.0" encoding="UTF-8" ?>
 </rss>
 '''})
 
-class MainHandler(web.RequestHandler):
+class MainHandler(RequestHandler):
     def get(self):
         self.write('Hello, torando.')
 
-class RSSHandler(web.RequestHandler):
+class RSSHandler(RequestHandler):
     def initialize(self, db):
         self.db = db
     @gen.coroutine
     def get(self, rss):
         if rss=='tianya':
-            hc = httpclient.AsyncHTTPClient()
+            hc = AsyncHTTPClient()
             response = yield hc.fetch('https://bbs.tianya.cn/m/list.jsp?item=develop&order=1')
             html = BeautifulSoup(response.body, 'html.parser')
             aa = html.select('ul.post-list li a')
@@ -46,11 +49,19 @@ class RSSHandler(web.RequestHandler):
         else:
             self.write(rss)
 
+@gen.coroutine
+def lp():
+    while True:
+        nxt = gen.sleep(60*5)
+        print 'asdf'
+        yield nxt
+
 if __name__=='__main__':
     options.parse_command_line()
-    hs = httpserver.HTTPServer(web.Application([
+    hs = HTTPServer(Application([
         (r'/', MainHandler),
         (r'/(.*)', RSSHandler, {'db': {'id': 'text'}}),
     ], template_loader=tl))
     hs.listen(options.options.port)
-    ioloop.IOLoop.current().start()
+    IOLoop.current().spawn_callback(lp)
+    IOLoop.current().start()
