@@ -1,4 +1,6 @@
 #!/usr/bin/env python2
+# -*- coding: utf-8 -*-
+
 from tornado import web, httpserver, ioloop
 from tornado import gen, httpclient, template
 from tornado import options
@@ -24,16 +26,13 @@ tl = template.DictLoader({'rss.xml': '''<?xml version="1.0" encoding="UTF-8" ?>
 </rss>
 '''})
 
-class Hdl(web.RequestHandler):
-    @property
-    def db(self):
-        return self.application.db
-
-class MainHandler(Hdl):
+class MainHandler(web.RequestHandler):
     def get(self):
         self.write('Hello, torando.')
 
-class RSSHandler(Hdl):
+class RSSHandler(web.RequestHandler):
+    def initialize(self, db):
+        self.db = db
     @gen.coroutine
     def get(self, rss):
         if rss=='tianya':
@@ -47,18 +46,11 @@ class RSSHandler(Hdl):
         else:
             self.write(rss)
 
-class App(web.Application):
-    def __init__(self):
-        handlers = [
-            (r'/', MainHandler),
-            (r'/(.*)', RSSHandler),
-        ]
-        settings = {'template_loader': tl}
-        web.Application.__init__(self, handlers, **settings)
-        self.db = None
-
 if __name__=='__main__':
     options.parse_command_line()
-    hs = httpserver.HTTPServer(App())
+    hs = httpserver.HTTPServer(web.Application([
+        (r'/', MainHandler),
+        (r'/(.*)', RSSHandler, {'db': {'id': 'text'}}),
+    ], template_loader=tl))
     hs.listen(options.options.port)
-    ioloop.IOLoop.instance().start()
+    ioloop.IOLoop.current().start()
