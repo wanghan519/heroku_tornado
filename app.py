@@ -1,5 +1,4 @@
-#!/usr/bin/env python2
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
 
 from tornado.web import RequestHandler, Application
 from tornado.httpserver import HTTPServer
@@ -36,11 +35,10 @@ class MainHandler(RequestHandler):
 class RSSHandler(RequestHandler):
     def initialize(self, db):
         self.db = db
-    @gen.coroutine
-    def get(self, rss):
+    async def get(self, rss):
         if rss=='tianya':
             hc = AsyncHTTPClient()
-            response = yield hc.fetch('https://bbs.tianya.cn/m/list.jsp?item=develop&order=1')
+            response = await hc.fetch('https://bbs.tianya.cn/m/list.jsp?item=develop&order=1')
             html = BeautifulSoup(response.body, 'html.parser')
             aa = html.select('ul.post-list li a')
             ar = [(i.select('div.p-title')[0].get_text().strip(), 'https://bbs.tianya.cn/m/'+i.attrs['href'], i.select('span')[0].get_text(), i.select('div.author')[0].get_text().split()[0]) for i in aa[:5]]
@@ -49,12 +47,11 @@ class RSSHandler(RequestHandler):
         else:
             self.write(rss)
 
-@gen.coroutine
-def lp():
+async def lp():
     while True:
-        nxt = gen.sleep(60*5)
-        print 'asdf'
-        yield nxt
+        gs = gen.sleep(60*5)
+        print('asdf')
+        await gs
 
 if __name__=='__main__':
     options.parse_command_line()
