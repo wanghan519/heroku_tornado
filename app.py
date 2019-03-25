@@ -48,7 +48,7 @@ class MainHandler(RequestHandler):
     def on_finish(self):
         self.db.close()
     def get(self):
-        self.write(self.db.query(Alert).first().v)
+        self.write(str(self.db.query(Alert).count()))
 
 class RSSHandler(RequestHandler):
     async def get(self, site):
