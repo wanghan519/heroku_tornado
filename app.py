@@ -7,8 +7,21 @@ from tornado.httpclient import AsyncHTTPClient
 from tornado.template import DictLoader
 from tornado import gen, options
 from bs4 import BeautifulSoup
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, Column, String
+import re
 
-options.define('port', default=5000, help='port to run on', type=int)
+options.define('port', default=5000, type=int, help='port to run on')
+
+eg = create_engine('sqlite:///:memory:')
+Base = declarative_base()
+class Alert(Base):
+    __tablename__ = 'alert'
+    k = Column(String, primary_key=True)
+    v = Column(String)
+    t = Column(String)
+Base.metadata.create_all(eg)
 
 tl = DictLoader({'rss.xml': '''<?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0">
@@ -29,12 +42,12 @@ tl = DictLoader({'rss.xml': '''<?xml version="1.0" encoding="UTF-8" ?>
 '''})
 
 class MainHandler(RequestHandler):
+    def initialize(self, sm):
+        self.ss = sm()
     def get(self):
-        self.write('Hello, torando.')
+        self.write(self.ss.query(Alert).first().v)
 
 class RSSHandler(RequestHandler):
-    def initialize(self, db):
-        self.db = db
     async def get(self, rss):
         if rss=='tianya':
             hc = AsyncHTTPClient()
@@ -50,14 +63,21 @@ class RSSHandler(RequestHandler):
 async def lp():
     while True:
         gs = gen.sleep(60*5)
-        print('asdf')
+        sm = sessionmaker(bind=eg)
+        ss = sm()
+        hc = AsyncHTTPClient()
+        rp = await hc.fetch('http://hq.sinajs.cn/list=%s'%'sz000735')
+        l1 = re.split(r'[",]', rp.body.decode('cp936'))
+        ss.add(Alert(k=l1[1], v=l1[4], t='stock'))
+        ss.commit()
+        ss.close()
         await gs
 
 if __name__=='__main__':
     options.parse_command_line()
     hs = HTTPServer(Application([
-        (r'/', MainHandler),
-        (r'/(.*)', RSSHandler, {'db': {'id': 'text'}}),
+        (r'/', MainHandler, {'sm': sessionmaker(bind=eg)}),
+        (r'/(.*)', RSSHandler),
     ], template_loader=tl))
     hs.listen(options.options.port)
     IOLoop.current().spawn_callback(lp)
