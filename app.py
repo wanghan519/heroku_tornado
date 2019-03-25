@@ -66,13 +66,16 @@ class RSSHandler(RequestHandler):
 async def loop():
     while True:
         gens = gen.sleep(60*5)
-        db = sssm()
-        ashc = AsyncHTTPClient()
-        rspn = await ashc.fetch('http://hq.sinajs.cn/list=%s'%'sz000735')
-        lst1 = re.split(r'[",]', rspn.body.decode('cp936'))
-        db.add(Alert(k=lst1[1], v=lst1[4], t='stock'))
-        db.commit()
-        db.close()
+        try:
+            db = sssm()
+            ashc = AsyncHTTPClient()
+            rspn = await ashc.fetch('http://hq.sinajs.cn/list=%s'%'sz000735')
+            lst1 = re.split(r'[",]', rspn.body.decode('cp936'))
+            db.add(Alert(k=lst1[1], v=lst1[4], t='stock'))
+            db.commit()
+            db.close()
+        except:
+            print('loop error')
         await gens
 
 if __name__=='__main__':
