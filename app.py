@@ -5,12 +5,11 @@ from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 from tornado.httpclient import AsyncHTTPClient
 from tornado.template import DictLoader
-from tornado import gen, options
+from tornado import options
 from bs4 import BeautifulSoup
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, Column, String
-import re, json
 
 options.define('port', default=5000, type=int, help='port to run on')
 
@@ -47,7 +46,7 @@ class MainHandler(RequestHandler):
     def on_finish(self):
         self.db.close()
     def get(self):
-        self.write(str(self.db.query(Alert).count()))
+        self.write('test')
 
 class RSSHandler(RequestHandler):
     async def get(self, site):
@@ -62,27 +61,6 @@ class RSSHandler(RequestHandler):
         else:
             self.write(site)
 
-async def stock(stock_code):
-    url = 'http://hq.sinajs.cn/list=%s'%stock_code
-    http_client = AsyncHTTPClient()
-    response = await http_client.fetch(url)
-    l1 = re.split(r'[",]', response.body.decode('cp936'))
-    db = make_session()
-    db.add(Alert(k=url, v=json.dumps(l1)))
-    db.commit()
-    l0 = db.query(Alert).filter_by(k=url).all()
-    print(l0)
-    db.close()
-
-async def loop():
-    while True:
-        nxt = gen.sleep(60*5)
-        try:
-            await gen.multi(map(stock, ['sz000735', 'sh600999']))
-        except Exception as e:
-            print(e)
-        await nxt
-
 if __name__=='__main__':
     options.parse_command_line()
     http_server = HTTPServer(Application([
@@ -90,5 +68,4 @@ if __name__=='__main__':
         (r'/(.*)', RSSHandler),
     ], template_loader=temp_loader))
     http_server.listen(options.options.port)
-    IOLoop.current().spawn_callback(loop)
     IOLoop.current().start()
