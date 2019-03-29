@@ -63,7 +63,7 @@ class RSSHandler(RequestHandler):
             response = await http_client.fetch('https://www.nytimes.com/section/business/economy')
             soup = BeautifulSoup(response.body.decode('utf8'), 'html.parser')
             soup = soup.select('ol li.css-ye6x8s')
-            soup = [(i.select('a h2.css-1dq8tca.e1xfvim30')[0].get_text().strip(), i.select('a')[0].attrs['href'], '', i.select('a p.css-1echdzn.e1xfvim31')[0].get_text().strip()) for i in soup[:5]]
+            soup = [(i.select('a h2.css-1dq8tca.e1xfvim30')[0].get_text().strip(), i.select('a')[0].attrs['href'], i.select('a')[0].attrs['href'][1:11], i.select('a p.css-1echdzn.e1xfvim31')[0].get_text().strip()) for i in soup[:5]]
             self.set_header('Content-Type', 'application/xml; charset=UTF-8')
             self.render('rss.xml', site=site, soup=soup)
         else:
