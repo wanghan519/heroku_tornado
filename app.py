@@ -26,7 +26,7 @@ temp_loader = DictLoader({'rss.xml': '''<?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0">
 <channel>
  <title>{{ site }}</title>
- <link>http://wils519.herokuapp.com/{{ site }}</link>
+ <link>http://wils519.herokuapp.com/rss/{{ site }}</link>
  <description>https://github.com/wanghan519/heroku_tornado</description>
  {% for i in soup %}
  <item>
@@ -53,17 +53,15 @@ class RSSHandler(RequestHandler):
         if site=='tianya':
             http_client = AsyncHTTPClient()
             response = await http_client.fetch('https://bbs.tianya.cn/m/list.jsp?item=develop&order=1')
-            soup = BeautifulSoup(response.body.decode('utf8'), 'html.parser')
-            soup = soup.select('ul.post-list li a')
-            soup = [(i.select('div.p-title')[0].get_text().strip(), 'https://bbs.tianya.cn/m/'+i.attrs['href'], i.select('span')[0].get_text(), i.select('div.author')[0].get_text().split()[0]) for i in soup[:5]]
+            soup = BeautifulSoup(response.body, 'html.parser').select('ul.post-list li a')
+            soup = [(i.div.string.strip(), 'https://bbs.tianya.cn/m/'+i['href'], i.span.string, i.find(class_='author').get_text().split()[0]) for i in soup[:5]]
             self.set_header('Content-Type', 'application/xml; charset=UTF-8')
             self.render('rss.xml', site=site, soup=soup)
         elif site=='nytimes':
             http_client = AsyncHTTPClient()
             response = await http_client.fetch('https://www.nytimes.com/section/business/economy')
-            soup = BeautifulSoup(response.body.decode('utf8'), 'html.parser')
-            soup = soup.select('ol li.css-ye6x8s')
-            soup = [(i.select('a h2.css-1dq8tca.e1xfvim30')[0].get_text().strip(), i.select('a')[0].attrs['href'], i.select('a')[0].attrs['href'][1:11], i.select('a p.css-1echdzn.e1xfvim31')[0].get_text().strip()) for i in soup[:5]]
+            soup = BeautifulSoup(response.body, 'html.parser').select('ol li.css-ye6x8s')
+            soup = [(i.h2.string, i.a['href'], i.a['href'][1:11], i.p.string) for i in soup[:5]]
             self.set_header('Content-Type', 'application/xml; charset=UTF-8')
             self.render('rss.xml', site=site, soup=soup)
         else:
