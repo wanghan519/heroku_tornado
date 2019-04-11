@@ -51,36 +51,31 @@ class MainHandler(RequestHandler):
 
 class RSSHandler(RequestHandler):
     async def get(self, site):
+        http_client = AsyncHTTPClient()
         if site=='tianya':
-            http_client = AsyncHTTPClient()
             response = await http_client.fetch('https://bbs.tianya.cn/m/list.jsp?item=develop&order=1')
             soup = BeautifulSoup(response.body, 'html.parser').select('ul.post-list li a')
             soup = [(i.div.get_text().strip(), 'https://bbs.tianya.cn/m/'+i['href'], i.span.string, i.find(class_='author').get_text().split()[0]) for i in soup[:5]]
-            self.set_header('Content-Type', 'application/xml; charset=UTF-8')
-            self.render('rss.xml', site=site, soup=soup)
         elif site=='nytimes':
-            http_client = AsyncHTTPClient()
             response = await http_client.fetch('https://www.nytimes.com/section/business/economy')
             soup = BeautifulSoup(response.body, 'html.parser').select('ol li.css-ye6x8s')
             soup = [(i.h2.string, 'https://www.nytimes.com'+i.a['href'], i.a['href'][1:11], i.p.string) for i in soup[:5]]
-            self.set_header('Content-Type', 'application/xml; charset=UTF-8')
-            self.render('rss.xml', site=site, soup=soup)
         elif site.startswith('novel'):
-            http_client = AsyncHTTPClient()
             response = await http_client.fetch('http://www.aileleba.com/%s.shtml'%site[5:])
             soup = BeautifulSoup(response.body, 'html.parser').select('ul.chapters li.min-width a')
             soup = [(i.string, i['href'], str(time.time()), i.string) for i in soup[-5:]]
             soup.reverse()
-            self.set_header('Content-Type', 'application/xml; charset=UTF-8')
-            self.render('rss.xml', site=site, soup=soup)
         else:
             self.write(site)
+            return
+        self.set_header('Content-Type', 'application/xml; charset=UTF-8')
+        self.render('rss.xml', site=site, soup=soup)
 
 if __name__=='__main__':
     options.parse_command_line()
     http_server = HTTPServer(Application([
         (r'/', MainHandler, {'make_session': make_session}),
-        (r'/rss/(.*)', RSSHandler),
+        (r'/rss/(.+)', RSSHandler),
     ], template_loader=temp_loader, static_path='./'))
     http_server.listen(options.options.port)
     IOLoop.current().start()
