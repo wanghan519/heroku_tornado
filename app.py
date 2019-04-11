@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from tornado.web import RequestHandler, Application
+from tornado.web import HTTPError, RequestHandler, Application
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 from tornado.httpclient import AsyncHTTPClient
@@ -66,8 +66,7 @@ class RSSHandler(RequestHandler):
             soup = [(i.string, i['href'], str(time.time()), i.string) for i in soup[-5:]]
             soup.reverse()
         else:
-            self.write(site)
-            return
+            raise HTTPError(404)
         self.set_header('Content-Type', 'application/xml; charset=UTF-8')
         self.render('rss.xml', site=site, soup=soup)
 
