@@ -61,9 +61,9 @@ class RSSHandler(RequestHandler):
             soup = BeautifulSoup(response.body, 'html.parser').select('ol li.css-ye6x8s')
             soup = [(i.h2.string, 'https://www.nytimes.com'+i.a['href'], i.a['href'][1:11], i.p.string) for i in soup[:5]]
         elif site.startswith('novel'):
-            response = await http_client.fetch('http://www.aileleba.com/%s.shtml'%site[5:])
-            soup = BeautifulSoup(response.body, 'html.parser').select('ul.chapters li.min-width a')
-            soup = [(i.string, i['href'], str(time.time()), i.string) for i in soup[-5:]]
+            response = await http_client.fetch('https://www.sczprc.com/%s/'%site[5:])
+            soup = BeautifulSoup(response.body, 'html.parser').select('ul.clearfix.chapter-list li a')
+            soup = [(i.string, 'https://www.sczprc.com'+i['href'], str(time.time()), i['title']) for i in soup[-5:]]
             soup.reverse()
         else:
             raise HTTPError(404)
