@@ -1,29 +1,26 @@
 #!/usr/bin/env python
 
+import time, sys
 from tornado.web import HTTPError, RequestHandler, Application
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
 from tornado.httpclient import AsyncHTTPClient
 from tornado.template import DictLoader
-from tornado import options
 from bs4 import BeautifulSoup
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, Column, String
-import time
 
-options.define('port', default=5000, type=int, help='port to run on')
-
-sqlite_engine = create_engine('sqlite:///:memory:')
-Base = declarative_base()
-class Alert(Base):
-    __tablename__ = 'alert'
+SQLITE_ENGINE = create_engine('sqlite:///:memory:')
+DCLR_BASE = declarative_base()
+class Data(DCLR_BASE):
+    __tablename__ = 'data'
     k = Column(String, primary_key=True)
     v = Column(String)
-Base.metadata.create_all(sqlite_engine)
-make_session = sessionmaker(bind=sqlite_engine)
+DCLR_BASE.metadata.create_all(SQLITE_ENGINE)
+MAKE_SESSION = sessionmaker(bind=SQLITE_ENGINE)
 
-temp_loader = DictLoader({'rss.xml': '''<?xml version="1.0" encoding="UTF-8" ?>
+TEMP_LOADER = DictLoader({'rss.xml': '''<?xml version="1.0" encoding="UTF-8" ?>
 <rss version="2.0">
 <channel>
  <title>{{ site }}</title>
@@ -41,15 +38,15 @@ temp_loader = DictLoader({'rss.xml': '''<?xml version="1.0" encoding="UTF-8" ?>
 </rss>
 '''})
 
-class MainHandler(RequestHandler):
-    def initialize(self, make_session):
-        self.db = make_session()
+class MyHandler(RequestHandler):
+    def initialize(self):
+        self.db = MAKE_SESSION()
     def on_finish(self):
         self.db.close()
     def get(self):
         self.write('test')
 
-class RSSHandler(RequestHandler):
+class RSSHandler(MyHandler):
     async def get(self, site):
         http_client = AsyncHTTPClient()
         if site=='tianya':
@@ -71,10 +68,9 @@ class RSSHandler(RequestHandler):
         self.render('rss.xml', site=site, soup=soup)
 
 if __name__=='__main__':
-    options.parse_command_line()
     http_server = HTTPServer(Application([
-        (r'/', MainHandler, {'make_session': make_session}),
+        (r'/', MyHandler),
         (r'/rss/(.+)', RSSHandler),
-    ], template_loader=temp_loader, static_path='./'))
-    http_server.listen(options.options.port)
+    ], template_loader=TEMP_LOADER, static_path='./'))
+    http_server.listen(sys.argv[1] if len(sys.argv)==2 else 5000)
     IOLoop.current().start()
