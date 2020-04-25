@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-import time, sys
+import sys
 from tornado.web import HTTPError, RequestHandler, Application
 from tornado.httpserver import HTTPServer
 from tornado.ioloop import IOLoop
@@ -57,11 +57,10 @@ class RSSHandler(MyHandler):
             response = await http_client.fetch('https://www.nytimes.com/section/business/economy')
             soup = BeautifulSoup(response.body, 'html.parser').select('ol li.css-ye6x8s')
             soup = [(i.h2.string, 'https://www.nytimes.com'+i.a['href'], i.a['href'][1:11], i.p.string) for i in soup[:5]]
-        elif site.startswith('novel'):
-            response = await http_client.fetch('https://www.sczprc.com/%s/'%site[5:], request_timeout=120)
-            soup = BeautifulSoup(response.body, 'html.parser').select('ul.clearfix.chapter-list li a')
-            soup = [(i.string, 'https://www.sczprc.com'+i['href'], str(time.time()), i['title']) for i in soup[-5:]]
-            soup.reverse()
+        elif site=='uzb':
+            response = await http_client.fetch('http://www.uzaobao.com/plus/list.php?tid=28')
+            soup = BeautifulSoup(response.body, 'html.parser').select('div.listbox ul.e2 li')
+            soup = [(i.find(class_='title').string, 'http://www.uzaobao.com'+i.find(class_='title')['href'], i.find(class_='info').contents[2], i.find(class_='intro').string) for i in soup[:5]]
         else:
             raise HTTPError(404)
         self.set_header('Content-Type', 'application/xml; charset=UTF-8')
