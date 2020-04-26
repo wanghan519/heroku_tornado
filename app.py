@@ -66,6 +66,7 @@ class HTMLHandler(RequestHandler):
     async def get(self, site):
         http_client = AsyncHTTPClient()
         response = await http_client.fetch(site)
+        self.set_header('Content-Type', 'text/plain; charset=UTF-8')
         self.write(response.body)
 
 if __name__=='__main__':
