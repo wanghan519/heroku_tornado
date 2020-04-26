@@ -53,10 +53,6 @@ class RSSHandler(MyHandler):
             response = await http_client.fetch('https://bbs.tianya.cn/m/list.jsp?item=develop&order=1')
             soup = BeautifulSoup(response.body, 'html.parser').select('ul.post-list li a')
             soup = [(i.div.get_text().strip(), 'https://bbs.tianya.cn/m/'+i['href'], i.span.string, i.find(class_='author').get_text().split()[0]) for i in soup[:5]]
-        elif site=='nytimes':
-            response = await http_client.fetch('https://www.nytimes.com/section/business/economy')
-            soup = BeautifulSoup(response.body, 'html.parser').select('ol li.css-ye6x8s')
-            soup = [(i.h2.string, 'https://www.nytimes.com'+i.a['href'], i.a['href'][1:11], i.p.string) for i in soup[:5]]
         elif site=='uzb':
             response = await http_client.fetch('http://www.uzaobao.com/plus/list.php?tid=28')
             soup = BeautifulSoup(response.body, 'html.parser').select('div.listbox ul.e2 li')
@@ -66,10 +62,17 @@ class RSSHandler(MyHandler):
         self.set_header('Content-Type', 'application/xml; charset=UTF-8')
         self.render('rss.xml', site=site, soup=soup)
 
+class HTMLHandler(RequestHandler):
+    async def get(self, site):
+        http_client = AsyncHTTPClient()
+        response = await http_client.fetch(site)
+        self.write(response.body)
+
 if __name__=='__main__':
     http_server = HTTPServer(Application([
         (r'/', MyHandler),
         (r'/rss/(.+)', RSSHandler),
+        (r'/(http.+)', HTMLHandler),
     ], template_loader=TEMP_LOADER, static_path='./'))
     http_server.listen(sys.argv[1] if len(sys.argv)==2 else 5000)
     IOLoop.current().start()
